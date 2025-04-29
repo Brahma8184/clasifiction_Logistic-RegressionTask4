@@ -1,0 +1,7 @@
+This project uses a machine learning model called logistic regression to predict whether a breast tumor is malignant (cancerous) or benign (non-cancerous) using a dataset named data.csv. First, it removes unnecessary columns like 'id' and 'Unnamed: 32', and changes the 'diagnosis' column to numbers: 1 for malignant and 0 for benign. Then, it separates the data into two parts: features (X) that describe the tumor, and the result (y) that shows if it's cancerous. The data is split into training and testing sets (80% for training, 20% for testing).
+
+To make the data clean and easy for the model to use, it fills in any missing values with the average and scales all features to be on a similar range. After that, it trains the logistic regression model on the training data.
+
+The model gives us coefficients, which show which features are most important in making predictions. We then check how well the model works using tools like a confusion matrix, classification report, ROC curve, and precision-recall curve. The code also finds the best threshold to make the model's predictions more accurate.
+
+To help understand how logistic regression works, it shows the sigmoid curve, which is used to turn feature values into probabilities. Lastly, it shows the top 5 features that help the model guess if a tumor is cancerous or not, and prints the final equation the model uses to make predictions.
