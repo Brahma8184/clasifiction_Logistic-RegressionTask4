@@ -1,0 +1,88 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (confusion_matrix, classification_report, 
+                             roc_auc_score, roc_curve, precision_recall_curve)
+data = pd.read_csv('data.csv')
+data = data.drop(columns=[col for col in ['id', 'Unnamed: 32'] if col in data.columns])
+data['diagnosis'] = data['diagnosis'].map({'M': 1, 'B': 0})
+X = data.drop('diagnosis', axis=1)
+y = data['diagnosis']
+feature_names = X.columns
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+imputer = SimpleImputer(strategy='mean')
+X_train = imputer.fit_transform(X_train)
+X_test = imputer.transform(X_test)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+logreg = LogisticRegression(penalty='l2', C=1.0, solver='liblinear', random_state=42)
+logreg.fit(X_train, y_train)
+coefficients = pd.DataFrame({
+    'Feature': feature_names,
+    'Coefficient': logreg.coef_[0]
+}).sort_values(by='Coefficient', ascending=False)
+
+print("\nFeature Coefficients:\n", coefficients)
+y_pred = logreg.predict(X_test)
+y_pred_proba = logreg.predict_proba(X_test)[:, 1]
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['Benign', 'Malignant'],
+            yticklabels=['Benign', 'Malignant'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
+roc_auc = roc_auc_score(y_test, y_pred_proba)
+plt.figure()
+plt.plot(fpr, tpr, label=f'ROC curve (AUC = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], 'k--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend()
+plt.show()
+precision, recall, pr_thresholds = precision_recall_curve(y_test, y_pred_proba)
+plt.figure()
+plt.plot(recall, precision, label='Precision-Recall Curve')
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.title('Precision-Recall Curve')
+plt.legend()
+plt.show()
+f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+optimal_idx = np.argmax(f1_scores)
+optimal_threshold = pr_thresholds[optimal_idx]
+print(f"\nOptimal threshold (max F1): {optimal_threshold:.2f}")
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+x_vals = np.linspace(-10, 10, 100)
+y_vals = sigmoid(x_vals)
+plt.figure()
+plt.plot(x_vals, y_vals)
+plt.xlabel('Linear Combination')
+plt.ylabel('Sigmoid Output (Probability)')
+plt.title('Sigmoid Function')
+plt.grid()
+plt.show()
+top_malignant = coefficients.head(5)
+top_benign = coefficients.tail(5)
+print("\nTop 5 Features Predicting Malignancy:")
+print(top_malignant)
+print("\nTop 5 Features Predicting Benign:")
+print(top_benign)
+print("\nLogistic Regression Equation:")
+print(f"log(odds) = {logreg.intercept_[0]:.2f} + " +
+      " + ".join([f"({coef:.2f})*{feat}" for feat, coef in zip(coefficients['Feature'], coefficients['Coefficient'])]))
+print("\nProbability = 1 / (1 + e^-(log(odds)))")
